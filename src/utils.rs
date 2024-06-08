@@ -1,12 +1,14 @@
 use rand_distr::{Distribution, Normal, Uniform};
 
-pub fn gauss_random(mean: f32, std: f32) -> f32 {
+use crate::Float;
+
+pub fn gauss_random(mean: Float, std: Float) -> Float {
     let normal = Normal::new(mean, std).expect("std must be finite");
 
     normal.sample(&mut rand::thread_rng())
 }
 
-pub fn randf(a: f32, b: f32) -> f32 {
+pub fn randf(a: Float, b: Float) -> Float {
     let uniform = Uniform::new(a, b);
     uniform.sample(&mut rand::thread_rng())
 }
@@ -16,24 +18,24 @@ pub fn randi(a: i64, b: i64) -> i64 {
     uniform.sample(&mut rand::thread_rng())
 }
 
-pub fn randn(mu: f32, std: f32) -> f32 {
+pub fn randn(mu: Float, std: Float) -> Float {
     mu + gauss_random(0.0, 1.0) * std
 }
 
-pub fn zeros(n: usize) -> Vec<f32> {
+pub fn zeros(n: usize) -> Vec<Float> {
     vec![0.0; n]
 }
 
 pub struct MinMax {
-    min_value: f32,
+    min_value: Float,
     min_index: usize,
-    max_value: f32,
+    max_value: Float,
     max_index: usize,
-    diff_value: f32,
+    diff_value: Float,
 }
 
 // return max and min of a given non-empty array.
-pub fn maxmin(values: &[f32]) -> Option<MinMax> {
+pub fn maxmin(values: &[Float]) -> Option<MinMax> {
     if values.is_empty() {
         return None;
     }

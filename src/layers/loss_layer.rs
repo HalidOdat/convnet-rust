@@ -4,7 +4,7 @@
 // learning, and stuff like that. But for now, one of the layers in this
 // file must be the final layer in a Net.
 
-use crate::vol::Vol;
+use crate::{vol::Vol, Float};
 
 use super::{FinalLayer, NetLayer};
 
@@ -17,7 +17,7 @@ pub struct SofmaxLayer {
     out_sx: usize,
     out_sy: usize,
 
-    es: Vec<f32>,
+    es: Vec<Float>,
 }
 
 impl SofmaxLayer {
@@ -89,7 +89,7 @@ impl FinalLayer for SofmaxLayer {
         // this.out_act = A;
     }
 
-    fn backward(&mut self, y: usize, in_act: &mut Vol, out_act: &Vol) -> f32 {
+    fn backward(&mut self, y: usize, in_act: &mut Vol, out_act: &Vol) -> Float {
         // compute and accumulate gradient wrt weights and bias of this layer
         // var x = this.in_act;
         let x = in_act;
@@ -100,7 +100,7 @@ impl FinalLayer for SofmaxLayer {
         // for(var i=0;i<this.out_depth;i++) {
         for i in 0..self.out_depth {
             // var indicator = i === y ? 1.0 : 0.0;
-            let indicator = f32::from(i == y);
+            let indicator = Float::from(i == y);
 
             // var mul = -(indicator - this.es[i]);
             let mul = -(indicator - self.es[i]);
@@ -228,7 +228,7 @@ impl FinalLayer for SVMLayer {
         *out_act = in_act.clone();
     }
 
-    fn backward(&mut self, y: usize, in_act: &mut Vol, _out_act: &Vol) -> f32 {
+    fn backward(&mut self, y: usize, in_act: &mut Vol, _out_act: &Vol) -> Float {
         // compute and accumulate gradient wrt weights and bias of this layer
         // var x = this.in_act;
         let x = in_act;
@@ -240,7 +240,7 @@ impl FinalLayer for SVMLayer {
         // // of the ground truth should be higher than the score of any other
         // // class, by a margin
         // var yscore = x.w[y]; // score of ground truth
-        let yscore: f32 = x.w[y];
+        let yscore: Float = x.w[y];
 
         // var margin = 1.0;
         let margin = 1.0;

@@ -6,6 +6,8 @@ pub mod vol;
 
 pub use trainer::*;
 
+pub type Float = f64;
+
 #[cfg(test)]
 mod tests {
     #[test]

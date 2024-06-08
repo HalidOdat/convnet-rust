@@ -1,30 +1,30 @@
-use crate::{net::Net, utils::zeros, vol::Vol};
+use crate::{net::Net, utils::zeros, vol::Vol, Float};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Method {
     Sgd,
-    Adadlta { ro: f32, eps: f32 },
-    Adam { eps: f32, beta1: f32, beta2: f32 },
+    Adadlta { ro: Float, eps: Float },
+    Adam { eps: Float, beta1: Float, beta2: Float },
 }
 
 pub struct Trainer<'net> {
     net: &'net mut Net,
 
-    learning_rate: f32,
-    l1_decay: f32,
-    l2_decay: f32,
+    learning_rate: Float,
+    l1_decay: Float,
+    l2_decay: Float,
     batch_size: usize,
     method: Method,
-    momentum: f32,
+    momentum: Float,
 
     /// iteration counter
     k: usize,
 
     // last iteration gradients (used for momentum calculations)
-    gsum: Vec<Vec<f32>>,
+    gsum: Vec<Vec<Float>>,
 
     // used in adam or adadelta
-    xsum: Vec<Vec<f32>>,
+    xsum: Vec<Vec<Float>>,
 
     regression: bool,
 }
@@ -112,7 +112,7 @@ impl<'net> Trainer<'net> {
                     let l2grad = l2_decay * pg.params[j];
 
                     // var gij = (l2grad + l1grad + g[j]) / this.batch_size; // raw batch gradient
-                    let gij = (l2grad + l1grad + pg.grads[j]) / self.batch_size as f32;
+                    let gij = (l2grad + l1grad + pg.grads[j]) / self.batch_size as Float;
 
                     // var gsumi = this.gsum[i];
                     // var xsumi = this.xsum[i];
@@ -150,12 +150,12 @@ impl<'net> Trainer<'net> {
 pub struct TrainerBuilder<'net> {
     net: &'net mut Net,
 
-    learning_rate: f32,
-    l1_decay: f32,
-    l2_decay: f32,
+    learning_rate: Float,
+    l1_decay: Float,
+    l2_decay: Float,
     batch_size: usize,
     method: Method,
-    momentum: f32,
+    momentum: Float,
 }
 
 impl<'net> TrainerBuilder<'net> {
@@ -172,17 +172,17 @@ impl<'net> TrainerBuilder<'net> {
         }
     }
 
-    pub fn learning_rate(mut self, value: f32) -> Self {
+    pub fn learning_rate(mut self, value: Float) -> Self {
         self.learning_rate = value;
         self
     }
 
-    pub fn l1_decay(mut self, value: f32) -> Self {
+    pub fn l1_decay(mut self, value: Float) -> Self {
         self.l1_decay = value;
         self
     }
 
-    pub fn l2_decay(mut self, value: f32) -> Self {
+    pub fn l2_decay(mut self, value: Float) -> Self {
         self.l2_decay = value;
         self
     }
@@ -197,7 +197,7 @@ impl<'net> TrainerBuilder<'net> {
         self
     }
 
-    pub fn momentum(mut self, value: f32) -> Self {
+    pub fn momentum(mut self, value: Float) -> Self {
         self.momentum = value;
         self
     }

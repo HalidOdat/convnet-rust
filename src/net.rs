@@ -4,6 +4,7 @@ use crate::{
         ReluLayer, SofmaxLayer, TanhLayer,
     },
     vol::Vol,
+    Float,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -280,7 +281,7 @@ impl Net {
     }
 
     // backprop: compute gradients wrt all parameters
-    pub fn backward(&mut self, y: usize, vol: &mut Vol) -> f32 {
+    pub fn backward(&mut self, y: usize, vol: &mut Vol) -> Float {
         let n = self.acts.len();
 
         let (a, b) = Self::adjecent(&mut self.acts, n - 1);
@@ -314,7 +315,7 @@ impl Net {
         todo!()
     }
 
-    pub fn get_cost_loss(&mut self, vol: &Vol, y: usize) -> f32 {
+    pub fn get_cost_loss(&mut self, vol: &Vol, y: usize) -> Float {
         self.forward(vol, false);
 
         let n = self.acts.len();
@@ -343,7 +344,7 @@ impl Net {
 mod tests {
     use rand::random;
 
-    use crate::{vol::Vol, Trainer};
+    use crate::{vol::Vol, Float, Trainer};
 
     use super::{Activation, EndLayer, Layer, Net};
 
@@ -408,11 +409,11 @@ mod tests {
         for _k in 0..100 {
             // var x = new convnetjs.Vol([Math.random() * 2 - 1, Math.random() * 2 - 1]);
             let mut x =
-                Vol::from([random::<f32>() * 2.0 - 1.0, random::<f32>() * 2.0 - 1.0].as_ref());
+                Vol::from([random::<Float>() * 2.0 - 1.0, random::<Float>() * 2.0 - 1.0].as_ref());
             let pv = trainer.net().forward(&x, false);
 
             // var gti = Math.floor(Math.random() * 3);
-            let gti = (random::<f32>() * 3.0).floor() as usize;
+            let gti = (random::<Float>() * 3.0).floor() as usize;
 
             // trainer.train(x, gti);
             trainer.train(&mut x, gti);
@@ -434,9 +435,10 @@ mod tests {
         let mut net = setup();
 
         // var x = new convnetjs.Vol([Math.random() * 2 - 1, Math.random() * 2 - 1]);
-        let mut x = Vol::from([random::<f32>() * 2.0 - 1.0, random::<f32>() * 2.0 - 1.0].as_ref());
+        let mut x =
+            Vol::from([random::<Float>() * 2.0 - 1.0, random::<Float>() * 2.0 - 1.0].as_ref());
         // var gti = Math.floor(Math.random() * 3); // ground truth index
-        let gti = (random::<f32>() * 3.0).floor() as usize;
+        let gti = (random::<Float>() * 3.0).floor() as usize;
 
         let mut trainer = Trainer::builder(&mut net)
             .learning_rate(0.0001)
@@ -450,7 +452,7 @@ mod tests {
         trainer.train(&mut x, gti);
 
         // var delta = 0.000001;
-        let delta = 0.0001;
+        let delta = 0.000001;
 
         // for(var i=0;i<x.w.length;i++) {
         for i in 0..x.w.len() {

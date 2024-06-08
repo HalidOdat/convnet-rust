@@ -10,7 +10,7 @@ pub use loss_layer::*;
 pub use nonlinear_layer::*;
 pub use pool_layer::*;
 
-use crate::vol::Vol;
+use crate::{vol::Vol, Float};
 
 pub trait NetLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, is_training: bool);
@@ -24,7 +24,7 @@ pub trait NetLayer {
 
 pub trait FinalLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, is_training: bool);
-    fn backward(&mut self, y: usize, in_act: &mut Vol, out_act: &Vol) -> f32;
+    fn backward(&mut self, y: usize, in_act: &mut Vol, out_act: &Vol) -> Float;
     fn params_and_grads(&mut self) -> Vec<LayerDetails<'_>>;
 
     fn out_sx(&self) -> usize;
@@ -34,8 +34,8 @@ pub trait FinalLayer {
 
 #[derive(Debug)]
 pub struct LayerDetails<'a> {
-    pub params: &'a mut [f32],
-    pub grads: &'a mut [f32],
-    pub l1_decay_mul: f32,
-    pub l2_decay_mul: f32,
+    pub params: &'a mut [Float],
+    pub grads: &'a mut [Float],
+    pub l1_decay_mul: Float,
+    pub l2_decay_mul: Float,
 }

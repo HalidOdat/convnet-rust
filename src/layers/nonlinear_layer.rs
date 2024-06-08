@@ -112,6 +112,8 @@ impl NetLayer for SigmoidLayer {
             "in and out should have the same length"
         );
 
+        out_act.dw.fill(0.0);
+
         for (in_w, out_w) in in_act.w.iter().cloned().zip(out_act.w.iter_mut()) {
             *out_w = 1.0 / (1.0 + (-in_w).exp());
         }

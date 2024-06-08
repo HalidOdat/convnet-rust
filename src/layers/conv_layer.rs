@@ -5,7 +5,7 @@
 //! - ConvLayer does convolutions (so weight sharing spatially)
 //! putting them together in one file because they are very similar
 
-use crate::vol::Vol;
+use crate::{vol::Vol, Float};
 
 use super::NetLayer;
 
@@ -20,13 +20,13 @@ pub struct ConvLayer {
 
     stride: usize,
     padding: usize,
-    l1_decay_mul: f32,
-    l2_decay_mul: f32,
+    l1_decay_mul: Float,
+    l2_decay_mul: Float,
 
     pub(crate) out_sx: usize,
     pub(crate) out_sy: usize,
 
-    bias: f32,
+    bias: Float,
 
     filters: Vec<Vol>,
     biases: Vol,
@@ -55,10 +55,10 @@ pub struct ConvLayerBuilder {
     sy: usize,
     stride: usize,
     padding: usize,
-    l1_decay_mul: f32,
-    l2_decay_mul: f32,
+    l1_decay_mul: Float,
+    l2_decay_mul: Float,
 
-    bias: f32,
+    bias: Float,
 }
 
 impl ConvLayerBuilder {
@@ -103,19 +103,19 @@ impl ConvLayerBuilder {
     }
 
     /// default: 0.0
-    pub fn l1_decay_mul(mut self, value: f32) -> Self {
+    pub fn l1_decay_mul(mut self, value: Float) -> Self {
         self.l1_decay_mul = value;
         self
     }
 
     /// default: 1.0
-    pub fn l2_decay_mul(mut self, value: f32) -> Self {
+    pub fn l2_decay_mul(mut self, value: Float) -> Self {
         self.l2_decay_mul = value;
         self
     }
 
     /// default: 0.0
-    pub fn bias(mut self, value: f32) -> Self {
+    pub fn bias(mut self, value: Float) -> Self {
         self.bias = value;
         self
     }
@@ -326,9 +326,9 @@ pub struct FullyConnLayer {
     out_depth: usize,
 
     // optional
-    l1_decay_mul: f32,
-    l2_decay_mul: f32,
-    bias: f32,
+    l1_decay_mul: Float,
+    l2_decay_mul: Float,
+    bias: Float,
 
     // computed
     num_inputs: usize,
@@ -441,9 +441,9 @@ pub struct FullyConnLayerBuilder {
     out_depth: usize,
 
     // optional
-    l1_decay_mul: f32,
-    l2_decay_mul: f32,
-    bias: f32,
+    l1_decay_mul: Float,
+    l2_decay_mul: Float,
+    bias: Float,
 
     in_sx: usize,
     in_sy: usize,
@@ -467,17 +467,17 @@ impl FullyConnLayerBuilder {
     }
 
     /// default: 0.0
-    pub fn l1_decay_mul(mut self, value: f32) -> Self {
+    pub fn l1_decay_mul(mut self, value: Float) -> Self {
         self.l1_decay_mul = value;
         self
     }
     /// default: 1.0
-    pub fn l2_decay_mul(mut self, value: f32) -> Self {
+    pub fn l2_decay_mul(mut self, value: Float) -> Self {
         self.l2_decay_mul = value;
         self
     }
     /// default: 0.0
-    pub fn bias(mut self, value: f32) -> Self {
+    pub fn bias(mut self, value: Float) -> Self {
         self.bias = value;
         self
     }

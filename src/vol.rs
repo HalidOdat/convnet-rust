@@ -1,6 +1,6 @@
 use image::DynamicImage;
 
-use crate::utils::randn;
+use crate::{utils::randn, Float};
 
 // Vol is the basic building block of all data in a net.
 // it is essentially just a 3D volume of numbers, with a
@@ -15,12 +15,12 @@ pub struct Vol {
     sy: usize,
     depth: usize,
 
-    pub w: Vec<f32>,
-    pub dw: Vec<f32>,
+    pub w: Vec<Float>,
+    pub dw: Vec<Float>,
 }
 
-impl From<&[f32]> for Vol {
-    fn from(value: &[f32]) -> Self {
+impl From<&[Float]> for Vol {
+    fn from(value: &[Float]) -> Self {
         let sx = 1;
         let sy = 1;
         let depth = value.len();
@@ -43,7 +43,7 @@ impl Vol {
         // weight normalization is done to equalize the output
         // variance of every neuron, otherwise neurons with a lot
         // of incoming connections have outputs of larger variance
-        let scale = (1.0 / (n as f32)).sqrt();
+        let scale = (1.0 / (n as Float)).sqrt();
         let mut w = Vec::with_capacity(n);
         for _ in 0..n {
             let value = randn(0.0, scale);
@@ -60,7 +60,7 @@ impl Vol {
         }
     }
 
-    pub fn with_constant(sx: usize, sy: usize, depth: usize, constant: f32) -> Self {
+    pub fn with_constant(sx: usize, sy: usize, depth: usize, constant: Float) -> Self {
         let n = sx * sy * depth;
 
         let w = vec![constant; n];
@@ -82,32 +82,32 @@ impl Vol {
         ((self.sx * y) + x) * self.depth + d
     }
 
-    pub fn get(&self, x: usize, y: usize, d: usize) -> f32 {
+    pub fn get(&self, x: usize, y: usize, d: usize) -> Float {
         let index = self.get_index(x, y, d);
         self.w[index]
     }
 
-    pub fn set(&mut self, x: usize, y: usize, d: usize, value: f32) {
+    pub fn set(&mut self, x: usize, y: usize, d: usize, value: Float) {
         let index = self.get_index(x, y, d);
         self.w[index] = value
     }
 
-    pub fn add(&mut self, x: usize, y: usize, d: usize, value: f32) {
+    pub fn add(&mut self, x: usize, y: usize, d: usize, value: Float) {
         let index = self.get_index(x, y, d);
         self.w[index] += value
     }
 
-    pub fn get_gradiant(&self, x: usize, y: usize, d: usize) -> f32 {
+    pub fn get_gradiant(&self, x: usize, y: usize, d: usize) -> Float {
         let index = self.get_index(x, y, d);
         self.dw[index]
     }
 
-    pub fn set_gradiant(&mut self, x: usize, y: usize, d: usize, value: f32) {
+    pub fn set_gradiant(&mut self, x: usize, y: usize, d: usize, value: Float) {
         let index = self.get_index(x, y, d);
         self.dw[index] = value
     }
 
-    pub fn add_gradiant(&mut self, x: usize, y: usize, d: usize, value: f32) {
+    pub fn add_gradiant(&mut self, x: usize, y: usize, d: usize, value: Float) {
         let index = self.get_index(x, y, d);
         self.dw[index] += value
     }
@@ -136,7 +136,7 @@ impl Vol {
         let mut vol = Self::new(width, height, 4);
         for (w, pixel) in vol.w.iter_mut().zip(bytes.iter().copied()) {
             // normalize image pixels to [-0.5, 0.5]
-            *w = (pixel as f32) / 255.0 - 0.5;
+            *w = (pixel as Float) / 255.0 - 0.5;
         }
 
         vol
