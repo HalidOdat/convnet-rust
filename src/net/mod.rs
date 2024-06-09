@@ -47,15 +47,18 @@ pub enum EndLayer {
 // For now constraints: Simple linear order of layers, first layer input last layer a cost layer
 #[derive(::serde::Serialize)]
 pub struct Net {
-    layers: Vec<Box<dyn NetLayer>>,
-    final_layer: Box<dyn FinalLayer>,
+    layers: Vec<Box<dyn NetLayer + Send>>,
+    final_layer: Box<dyn FinalLayer + Send>,
 
     #[serde(skip)]
     acts: Vec<Vol>,
 }
 
 impl Net {
-    fn from_layers(layers: Vec<Box<dyn NetLayer>>, final_layer: Box<dyn FinalLayer>) -> Self {
+    fn from_layers(
+        layers: Vec<Box<dyn NetLayer + Send>>,
+        final_layer: Box<dyn FinalLayer + Send>,
+    ) -> Self {
         let mut acts = Vec::new();
         for layer in &layers {
             let in_sx = layer.out_sx();
@@ -76,7 +79,7 @@ impl Net {
         }
     }
     pub fn new(def_layers: &[Layer], def_final_layer: EndLayer) -> Self {
-        let mut layers: Vec<Box<dyn NetLayer>> = Vec::new();
+        let mut layers: Vec<Box<dyn NetLayer + Send>> = Vec::new();
 
         #[derive(Clone, Copy)]
         struct Dim {
