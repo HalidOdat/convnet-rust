@@ -2,6 +2,7 @@ use crate::vol::Vol;
 
 use super::NetLayer;
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct PoolLayer {
     // required
     sx: usize,
@@ -106,6 +107,7 @@ impl PoolLayerBuilder {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for PoolLayer {
     fn forward(
         &mut self,

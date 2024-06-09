@@ -12,6 +12,7 @@ pub use pool_layer::*;
 
 use crate::{vol::Vol, Float};
 
+#[typetag::serde(tag = "type")]
 pub trait NetLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, is_training: bool);
     fn backward(&mut self, in_act: &mut Vol, out_act: &Vol);
@@ -22,6 +23,7 @@ pub trait NetLayer {
     fn out_depth(&self) -> usize;
 }
 
+#[typetag::serde(tag = "type")]
 pub trait FinalLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, is_training: bool);
     fn backward(&mut self, y: usize, in_act: &mut Vol, out_act: &Vol) -> Float;

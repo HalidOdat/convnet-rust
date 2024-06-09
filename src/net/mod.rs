@@ -1,11 +1,13 @@
 use crate::{
     layers::{
-        ConvLayer, FinalLayer, FullyConnLayer, InputLayer, LayerDetails, NetLayer, PoolLayer,
-        ReluLayer, SofmaxLayer, TanhLayer,
+        ConvLayer, FinalLayer, FullyConnLayer, LayerDetails, NetLayer, PoolLayer, ReluLayer,
+        SofmaxLayer, TanhLayer,
     },
     vol::Vol,
     Float,
 };
+
+mod serde;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Activation {
@@ -43,13 +45,36 @@ pub enum EndLayer {
 
 // Net manages a set of layers
 // For now constraints: Simple linear order of layers, first layer input last layer a cost layer
+#[derive(::serde::Serialize)]
 pub struct Net {
     layers: Vec<Box<dyn NetLayer>>,
     final_layer: Box<dyn FinalLayer>,
+
+    #[serde(skip)]
     acts: Vec<Vol>,
 }
 
 impl Net {
+    fn from_layers(layers: Vec<Box<dyn NetLayer>>, final_layer: Box<dyn FinalLayer>) -> Self {
+        let mut acts = Vec::new();
+        for layer in &layers {
+            let in_sx = layer.out_sx();
+            let in_sy = layer.out_sy();
+            let in_depth = layer.out_depth();
+            acts.push(Vol::zeros(in_sx, in_sy, in_depth));
+        }
+
+        let in_sx = final_layer.out_sx();
+        let in_sy = final_layer.out_sy();
+        let in_depth = final_layer.out_depth();
+        acts.push(Vol::zeros(in_sx, in_sy, in_depth));
+
+        Self {
+            layers,
+            final_layer,
+            acts,
+        }
+    }
     pub fn new(def_layers: &[Layer], def_final_layer: EndLayer) -> Self {
         let mut layers: Vec<Box<dyn NetLayer>> = Vec::new();
 

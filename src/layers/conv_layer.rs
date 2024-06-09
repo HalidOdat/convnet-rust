@@ -9,6 +9,7 @@ use crate::{vol::Vol, Float};
 
 use super::NetLayer;
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ConvLayer {
     pub(crate) out_depth: usize,
     sx: usize,
@@ -148,6 +149,7 @@ impl ConvLayerBuilder {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for ConvLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         let v_sx = in_act.sx() as isize;
@@ -318,6 +320,7 @@ impl NetLayer for ConvLayer {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct FullyConnLayer {
     // required
     out_depth: usize,
@@ -347,6 +350,7 @@ impl FullyConnLayer {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for FullyConnLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         // this.in_act = V;

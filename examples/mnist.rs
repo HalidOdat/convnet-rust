@@ -1,67 +1,12 @@
-use std::{
-    error::Error,
-    fs::File,
-    io::{BufRead, Read},
-};
+use std::{error::Error, fs::File, io::Read};
 
 use convnet_rust::{
     net::{Activation, EndLayer, Layer, Net},
     vol::Vol,
     EpochTrainStats, EpochTrainer, Sample, Trainer,
 };
-use image::ColorType;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    println!("Hello");
-
-    let mut file = File::open("examples/data/mnist/t10k-images.idx3-ubyte")?;
-
-    let mut buffer = [0; 16];
-    file.read_exact(&mut buffer)?;
-
-    // Extract the values
-    let magic = u32::from_be_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);
-    let size = u32::from_be_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]) as usize;
-    let rows = u32::from_be_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]) as usize;
-    let cols = u32::from_be_bytes([buffer[12], buffer[13], buffer[14], buffer[15]]) as usize;
-
-    println!(
-        "Magic: {}, Size: {}, Rows: {}, Cols: {}",
-        magic, size, rows, cols
-    );
-
-    assert_eq!(magic, 2051);
-
-    let mut images = Vec::new();
-    for _ in 0..size {
-        let mut image = vec![0u8; rows * cols];
-        file.read_exact(&mut image)?;
-
-        images.push(image);
-    }
-
-    // // image::GrayImage::from_pixel(cols as u32, rows as u32, image)
-    // // let image = image::DynamicImage::new(cols as u32, rows as u32, image::ColorType::L8);
-    // // image.
-    // image::save_buffer("test.png", &image, cols as u32, rows as u32, ColorType::L8)?;
-
-    let mut file = File::open("examples/data/mnist/t10k-labels.idx1-ubyte")?;
-
-    let mut buffer = [0; 8];
-    file.read_exact(&mut buffer)?;
-
-    let magic = u32::from_be_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);
-    let size = u32::from_be_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]) as usize;
-
-    assert_eq!(magic, 2049);
-
-    println!("Magic: {}, Size: {}", magic, size);
-
-    let mut labels = Vec::new();
-    let read_count = file.read_to_end(&mut labels)?;
-
-    assert_eq!(read_count, 10000);
-
+fn train(cols: usize, rows: usize, images: &[Vec<u8>], labels: &[u8]) -> Net {
     let mut samples = Vec::new();
     for (i, (image, label)) in images
         .iter()
@@ -72,10 +17,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         if label > 9 {
             println!("Skipping label {label}");
             continue;
-        }
-
-        if i == 10000 - 100 {
-            break;
         }
 
         samples.push(Sample {
@@ -149,7 +90,64 @@ fn main() -> Result<(), Box<dyn Error>> {
         // println!("{:?}", stats);
     }
 
-    for i in (0..size).rev().take(100) {
+    net
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut file = File::open("examples/data/mnist/t10k-images.idx3-ubyte")?;
+
+    let mut buffer = [0; 16];
+    file.read_exact(&mut buffer)?;
+
+    // Extract the values
+    let magic = u32::from_be_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);
+    let size = u32::from_be_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]) as usize;
+    let rows = u32::from_be_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]) as usize;
+    let cols = u32::from_be_bytes([buffer[12], buffer[13], buffer[14], buffer[15]]) as usize;
+
+    println!(
+        "Magic: {}, Size: {}, Rows: {}, Cols: {}",
+        magic, size, rows, cols
+    );
+
+    assert_eq!(magic, 2051);
+
+    let mut images = Vec::new();
+    for _ in 0..size {
+        let mut image = vec![0u8; rows * cols];
+        file.read_exact(&mut image)?;
+
+        images.push(image);
+    }
+
+    // // image::GrayImage::from_pixel(cols as u32, rows as u32, image)
+    // // let image = image::DynamicImage::new(cols as u32, rows as u32, image::ColorType::L8);
+    // // image.
+    // image::save_buffer("test.png", &image, cols as u32, rows as u32, ColorType::L8)?;
+
+    let mut file = File::open("examples/data/mnist/t10k-labels.idx1-ubyte")?;
+
+    let mut buffer = [0; 8];
+    file.read_exact(&mut buffer)?;
+
+    let magic = u32::from_be_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);
+    let size = u32::from_be_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]) as usize;
+
+    assert_eq!(magic, 2049);
+
+    println!("Magic: {}, Size: {}", magic, size);
+
+    let mut labels = Vec::new();
+    let read_count = file.read_to_end(&mut labels)?;
+
+    assert_eq!(read_count, 10000);
+
+    let mut net = train(cols, rows, &images, &labels);
+    // let mut net: Net = bincode::deserialize_from(File::open("mnist-net-thin.bin")?)?;
+
+    let mut x = 0;
+
+    for i in (0..size).rev().take(1000) {
         let label = labels[i];
         let image = &images[i];
 
@@ -165,6 +163,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
 
+        x += 1;
+
         // image::save_buffer(
         //     format!("test_{label}_{prediction}__{i}.png"),
         //     image,
@@ -173,6 +173,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     ColorType::L8,
         // )?;
     }
+
+    println!("False count: {x}");
+    let bytes = bincode::serialize(&net)?;
+    std::fs::write("mnist-net-thin.bin", bytes)?;
 
     Ok(())
 }

@@ -1,4 +1,4 @@
-use image::DynamicImage;
+mod serde;
 
 use crate::{utils::randn, Float};
 
@@ -9,14 +9,33 @@ use crate::{utils::randn, Float};
 // all weights, and also stores all gradients w.r.t.
 // the data. c is optionally a value to initialize the volume
 // with. If c is missing, fills the Vol with random numbers.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ::serde::Serialize)]
 pub struct Vol {
     sx: usize,
     sy: usize,
     depth: usize,
 
     pub w: Vec<Float>,
+
+    #[serde(skip)]
     pub dw: Vec<Float>,
+}
+
+impl From<Vec<Float>> for Vol {
+    fn from(value: Vec<Float>) -> Self {
+        let sx = 1;
+        let sy = 1;
+        let depth = value.len();
+
+        let n = sx * sy * depth;
+        Self {
+            sx,
+            sy,
+            depth,
+            w: value,
+            dw: vec![0.0; n],
+        }
+    }
 }
 
 impl From<&[Float]> for Vol {
@@ -121,11 +140,8 @@ impl Vol {
     // setConst
 
     // pub fn augment() {}
-    pub fn from_rgba_image(img: &DynamicImage) -> Self {
-        let width = img.width() as usize;
-        let height = img.width() as usize;
-
-        let bytes = img.as_bytes();
+    pub fn from_rgba_image(img: &[u8], width: usize, height: usize) -> Self {
+        let bytes = img;
 
         assert_eq!(
             4 * width * height,

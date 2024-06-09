@@ -11,6 +11,7 @@ use super::{FinalLayer, NetLayer};
 /// This is a classifier, with N discrete classes from 0 to N-1
 /// it gets a stream of N incoming numbers and computes the softmax
 /// function (exponentiate and normalize to sum to 1 as probabilities should)
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct SofmaxLayer {
     num_inputs: usize,
     out_depth: usize,
@@ -34,6 +35,7 @@ impl SofmaxLayer {
     }
 }
 
+#[typetag::serde]
 impl FinalLayer for SofmaxLayer {
     fn forward(
         &mut self,
@@ -129,6 +131,7 @@ impl FinalLayer for SofmaxLayer {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct RegressionLayer {
     num_inputs: usize,
     out_depth: usize,
@@ -148,6 +151,7 @@ impl RegressionLayer {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for RegressionLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         *out_act = in_act.clone();
@@ -204,6 +208,7 @@ impl NetLayer for RegressionLayer {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct SVMLayer {
     num_inputs: usize,
     out_depth: usize,
@@ -223,6 +228,7 @@ impl SVMLayer {
     }
 }
 
+#[typetag::serde]
 impl FinalLayer for SVMLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         *out_act = in_act.clone();

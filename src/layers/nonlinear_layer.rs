@@ -3,6 +3,7 @@ use super::NetLayer;
 // Implements ReLU nonlinearity elementwise
 // x -> max(0, x)
 // the output is in [0, inf)
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReluLayer {
     pub(crate) out_sx: usize,
     pub(crate) out_sy: usize,
@@ -19,6 +20,7 @@ impl ReluLayer {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for ReluLayer {
     fn forward(
         &mut self,
@@ -83,6 +85,7 @@ impl NetLayer for ReluLayer {
 // Implements Sigmoid nnonlinearity elementwise
 // x -> 1/(1+e^(-x))
 // so the output is between 0 and 1.
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct SigmoidLayer {
     out_sx: usize,
     out_sy: usize,
@@ -99,6 +102,7 @@ impl SigmoidLayer {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for SigmoidLayer {
     fn forward(
         &mut self,
@@ -153,6 +157,7 @@ impl NetLayer for SigmoidLayer {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct TanhLayer {
     out_sx: usize,
     out_sy: usize,
@@ -169,6 +174,7 @@ impl TanhLayer {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for TanhLayer {
     fn forward(
         &mut self,

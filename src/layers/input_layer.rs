@@ -1,5 +1,6 @@
 use super::NetLayer;
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct InputLayer {
     // required
     out_depth: usize,
@@ -27,6 +28,7 @@ impl InputLayer {
     }
 }
 
+#[typetag::serde]
 impl NetLayer for InputLayer {
     fn forward(
         &mut self,
