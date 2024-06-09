@@ -142,6 +142,24 @@ impl Vol {
         vol
     }
 
+    pub fn from_grayscale_image(img: &[u8], width: usize, height: usize) -> Self {
+        let bytes = img;
+
+        assert_eq!(
+            width * height,
+            bytes.len(),
+            "image should have 1 component luma"
+        );
+
+        let mut vol = Self::new(width, height, 1);
+        for (w, pixel) in vol.w.iter_mut().zip(bytes.iter().copied()) {
+            // normalize image pixels to [-0.5, 0.5]
+            *w = (pixel as Float) / 255.0 - 0.5;
+        }
+
+        vol
+    }
+
     pub fn sx(&self) -> usize {
         self.sx
     }

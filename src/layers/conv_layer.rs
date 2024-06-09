@@ -150,9 +150,6 @@ impl ConvLayerBuilder {
 
 impl NetLayer for ConvLayer {
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
-        // TODO: Dont reconstruct the out_act, reuse it!
-        *out_act = Vol::zeros(self.out_sx, self.out_sy, self.out_depth);
-
         let v_sx = in_act.sx() as isize;
         let v_sy = in_act.sy() as isize;
         let xy_stride = self.stride as isize;

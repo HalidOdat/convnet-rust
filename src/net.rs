@@ -78,9 +78,9 @@ impl Net {
                     if dim_set {
                         panic!("input layer must be the first");
                     }
-                    let layer: Box<dyn NetLayer> =
-                        Box::new(InputLayer::with_dimensions(depth, width, height));
-                    layers.push(layer);
+                    // let layer: Box<dyn NetLayer> =
+                    //     Box::new(InputLayer::with_dimensions(depth, width, height));
+                    // layers.push(layer);
 
                     dim_set = true;
                     dim = Dim {
@@ -89,7 +89,7 @@ impl Net {
                         in_depth: depth,
                     };
 
-                    acts.push(Vol::zeros(dim.in_sx, dim.in_sy, dim.in_depth));
+                    // acts.push(Vol::zeros(dim.in_sx, dim.in_sy, dim.in_depth));
                 }
                 Layer::Conv {
                     sx,
@@ -301,18 +301,20 @@ impl Net {
     // prediction, assuming the last layer of the net is a softmax
     pub fn get_prediction(&self) -> usize {
         // var S = this.layers[this.layers.length-1];
-        let s = &self.final_layer;
         // assert(S.layer_type === 'softmax', 'getPrediction function assumes softmax as last layer of the net!');
 
-        // var p = S.out_act.w;
+        let out_acts = self.acts.last().expect("there should be at least two");
 
-        // var maxv = p[0];
-        // var maxi = 0;
-        // for(var i=1;i<p.length;i++) {
-        //     if(p[i] > maxv) { maxv = p[i]; maxi = i;}
-        // }
-        // return maxi; // return index of the class with highest class probability
-        todo!()
+        let p = &out_acts.w;
+        let mut maxv = p[0];
+        let mut maxi = 0;
+        for (i, value) in p.iter().enumerate() {
+            if *value > maxv {
+                maxv = *value;
+                maxi = i;
+            }
+        }
+        maxi // return index of the class with highest class probability
     }
 
     pub fn get_cost_loss(&mut self, vol: &Vol, y: usize) -> Float {
@@ -375,7 +377,7 @@ mod tests {
 
         // tanh are their own layers. Softmax gets its own fully connected layer.
         // this should all get desugared just fine.
-        assert_eq!(net.layers.len(), 6);
+        assert_eq!(net.layers.len(), 5);
     }
 
     #[test]
@@ -416,7 +418,7 @@ mod tests {
             let gti = (random::<Float>() * 3.0).floor() as usize;
 
             // trainer.train(x, gti);
-            trainer.train(&mut x, gti);
+            trainer.train_sample(&mut x, gti);
 
             // var pv2 = net.forward(x);
             let pv2 = trainer.net().forward(&x, false);
@@ -449,7 +451,7 @@ mod tests {
 
         // trainer.train(x, gti); // computes gradients at all layers, and at x
 
-        trainer.train(&mut x, gti);
+        trainer.train_sample(&mut x, gti);
 
         // var delta = 0.000001;
         let delta = 0.000001;

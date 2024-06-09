@@ -115,9 +115,6 @@ impl NetLayer for PoolLayer {
     ) {
         let v = in_act;
 
-        // TOOD: Reuse out_act
-        *out_act = Vol::zeros(self.out_sx, self.out_sy, self.out_depth);
-
         // var n=0; // a counter for switches
         let mut n = 0;
         // for(var d=0;d<this.out_depth;d++) {

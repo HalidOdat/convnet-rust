@@ -111,7 +111,7 @@ impl FinalLayer for SofmaxLayer {
 
         // loss is the class negative log likelihood
         // return -Math.log(this.es[y]);
-        -self.es[y].ln()
+        -(self.es[y].ln())
     }
 
     fn out_sx(&self) -> usize {
