@@ -368,6 +368,7 @@ impl NetLayer for FullyConnLayer {
             let wi = &self.filters[i].w;
 
             // for(var d=0;d<this.num_inputs;d++) {
+            #[allow(clippy::needless_range_loop)]
             for d in 0..self.num_inputs {
                 a += in_act.w[d] * wi[d]; // for efficiency use Vols directly for now
             }

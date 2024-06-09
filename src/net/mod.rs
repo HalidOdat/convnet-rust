@@ -9,13 +9,13 @@ use crate::{
 
 mod serde;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ::serde::Serialize, ::serde::Deserialize)]
 pub enum Activation {
     Relu,
     Tanh,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, ::serde::Serialize, ::serde::Deserialize)]
 pub enum Layer {
     Input {
         width: usize,
@@ -39,8 +39,15 @@ pub enum Layer {
     },
 }
 
+#[derive(Debug, Clone, Copy, ::serde::Serialize, ::serde::Deserialize)]
 pub enum EndLayer {
     Softmax { classes: usize },
+}
+
+#[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize)]
+pub struct Specification {
+    pub layers: Vec<Layer>,
+    pub final_layer: EndLayer,
 }
 
 // Net manages a set of layers
@@ -425,7 +432,7 @@ mod tests {
     #[test]
     fn increse_prob_for_ground_truth_class_when_trained() {
         let mut net = setup();
-        let mut trainer = Trainer::builder(&mut net)
+        let mut trainer = Trainer::builder()
             .learning_rate(0.0001)
             .momentum(0.0)
             .batch_size(1)
@@ -440,16 +447,16 @@ mod tests {
             // var x = new convnetjs.Vol([Math.random() * 2 - 1, Math.random() * 2 - 1]);
             let mut x =
                 Vol::from([random::<Float>() * 2.0 - 1.0, random::<Float>() * 2.0 - 1.0].as_ref());
-            let pv = trainer.net().forward(&x, false);
+            let pv = net.forward(&x, false);
 
             // var gti = Math.floor(Math.random() * 3);
             let gti = (random::<Float>() * 3.0).floor() as usize;
 
             // trainer.train(x, gti);
-            trainer.train_sample(&mut x, gti);
+            trainer.train_sample(&mut net, &mut x, gti);
 
             // var pv2 = net.forward(x);
-            let pv2 = trainer.net().forward(&x, false);
+            let pv2 = net.forward(&x, false);
 
             // expect(pv2.w[gti]).toBeGreaterThan(pv.w[gti]);
             assert!(pv2.w[gti] > pv.w[gti]);
@@ -470,7 +477,7 @@ mod tests {
         // var gti = Math.floor(Math.random() * 3); // ground truth index
         let gti = (random::<Float>() * 3.0).floor() as usize;
 
-        let mut trainer = Trainer::builder(&mut net)
+        let mut trainer = Trainer::builder()
             .learning_rate(0.0001)
             .momentum(0.0)
             .batch_size(1)
@@ -479,7 +486,7 @@ mod tests {
 
         // trainer.train(x, gti); // computes gradients at all layers, and at x
 
-        trainer.train_sample(&mut x, gti);
+        trainer.train_sample(&mut net, &mut x, gti);
 
         // var delta = 0.000001;
         let delta = 0.000001;
@@ -496,13 +503,13 @@ mod tests {
             x.w[i] += delta;
 
             // var c0 = net.getCostLoss(x, gti);
-            let c0 = trainer.net().get_cost_loss(&x, gti);
+            let c0 = net.get_cost_loss(&x, gti);
 
             // x.w[i] -= 2*delta;
             x.w[i] -= 2.0 * delta;
 
             // var c1 = net.getCostLoss(x, gti);
-            let c1 = trainer.net().get_cost_loss(&x, gti);
+            let c1 = net.get_cost_loss(&x, gti);
 
             // x.w[i] = xold; // reset
             x.w[i] = xold;

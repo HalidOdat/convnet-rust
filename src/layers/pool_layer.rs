@@ -124,7 +124,7 @@ impl NetLayer for PoolLayer {
             // var x = -this.pad;
             let mut x = -(self.padding as isize);
             // var y = -this.pad;
-            let mut y = -(self.padding as isize);
+            let mut y; // = -(self.padding as isize);
 
             // for(var ax=0; ax<this.out_sx; x+=this.stride,ax++) {
             for ax in 0..self.out_sx {
@@ -204,14 +204,14 @@ impl NetLayer for PoolLayer {
         // for(var d=0;d<this.out_depth;d++) {
         for d in 0..self.out_depth {
             // var x = -this.pad;
-            let mut x = -(self.padding as isize);
+            // let mut x = -(self.padding as isize);
             // var y = -this.pad;
-            let mut y = -(self.padding as isize);
+            // let mut y; // = -(self.padding as isize);
 
             // for(var ax=0; ax<this.out_sx; x+=this.stride,ax++) {
             for ax in 0..self.out_sx {
                 // y = -this.pad;
-                y = -(self.padding as isize);
+                // y = -(self.padding as isize);
 
                 // for(var ay=0; ay<this.out_sy; y+=this.stride,ay++) {
                 for ay in 0..self.out_sy {
@@ -224,10 +224,10 @@ impl NetLayer for PoolLayer {
                     // n++;
                     n += 1;
 
-                    y += self.stride as isize;
+                    // y += self.stride as isize;
                 }
 
-                x += self.stride as isize;
+                // x += self.stride as isize;
             }
         }
     }

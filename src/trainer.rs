@@ -1,4 +1,4 @@
-use crate::{net::Net, utils::zeros, vol::Vol, DataSet, Float, Sample};
+use crate::{net::Net, utils::zeros, vol::Vol, Float, Sample};
 use rand::seq::SliceRandom;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -17,6 +17,12 @@ pub enum Method {
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TrainStats {
+    pub epoch: usize,
+    pub epoch_count: usize,
+    pub batch: usize,
+    pub batch_count: usize,
+    pub samples_per_batch: usize,
+
     pub l1_decay_loss: Float,
     pub l2_decay_loss: Float,
     pub cost_loss: Float,
@@ -28,9 +34,7 @@ impl TrainStats {
     }
 }
 
-pub struct Trainer<'net> {
-    net: &'net mut Net,
-
+pub struct Trainer {
     learning_rate: Float,
     l1_decay: Float,
     l2_decay: Float,
@@ -48,20 +52,29 @@ pub struct Trainer<'net> {
 
     /// iteration counter
     k: usize,
+
+    epoch_count: usize,
+    epoch_counter: usize,
+
+    samples: Vec<Sample>,
+
+    samples_indices: Vec<u32>,
+    validation_indices: Vec<u32>,
+
+    pub classification_loss: Window,
+    pub l2_weight_decay_loss: Window,
+    pub training_accuracy: Window,
+    pub validation_accuracy: Window,
 }
 
-impl<'net> Trainer<'net> {
-    pub fn builder(net: &mut Net) -> TrainerBuilder<'_> {
-        TrainerBuilder::new(net)
+impl Trainer {
+    pub fn builder() -> TrainerBuilder {
+        TrainerBuilder::new()
     }
 
-    pub fn net(&mut self) -> &mut Net {
-        &mut *self.net
-    }
-
-    pub fn train_sample(&mut self, x: &mut Vol, y: usize) -> TrainStats {
-        self.net.forward(x, true);
-        let cost_loss = self.net.backward(y, x);
+    pub fn train_sample(&mut self, net: &mut Net, x: &mut Vol, y: usize) -> TrainStats {
+        net.forward(x, true);
+        let cost_loss = net.backward(y, x);
 
         let mut l1_decay_loss = 0.0;
         let mut l2_decay_loss = 0.0;
@@ -71,7 +84,7 @@ impl<'net> Trainer<'net> {
         self.k += 1;
         if self.k % self.batch_size == 0 {
             // var pglist = this.net.getParamsAndGrads();
-            let mut pg_list = self.net.params_and_grads();
+            let mut pg_list = net.params_and_grads();
 
             // // initialize lists for accumulators. Will only be done once on first iteration
             // if(this.gsum.length === 0 && (this.method !== 'sgd' || this.momentum > 0.0)) {
@@ -165,35 +178,122 @@ impl<'net> Trainer<'net> {
         }
 
         TrainStats {
+            epoch: self.epoch_count,
+            epoch_count: self.epoch_count,
+            batch: self.batch_size,
+            batch_count: self.batch_size,
+            samples_per_batch: self.samples_indices.len() / self.batch_size,
+
             l1_decay_loss,
             l2_decay_loss,
             cost_loss,
         }
     }
+
+    fn randomize_samples(&mut self) {
+        self.samples_indices.shuffle(&mut rand::thread_rng());
+    }
+
+    pub fn train(&mut self, net: &mut Net, stats: &mut TrainStats) -> bool {
+        if self.k >= self.samples_indices.len() {
+            self.k = 0;
+            self.epoch_counter += 1;
+        }
+        if self.epoch_counter >= self.epoch_count {
+            *stats = TrainStats {
+                epoch: self.epoch_count,
+                epoch_count: self.epoch_count,
+                batch: self.batch_size,
+                batch_count: self.batch_size,
+                samples_per_batch: self.samples_indices.len() / self.batch_size,
+                l1_decay_loss: stats.l1_decay_loss,
+                l2_decay_loss: stats.l2_decay_loss,
+                cost_loss: stats.cost_loss,
+            };
+            self.epoch_counter = 0;
+            self.k = 0;
+            self.randomize_samples();
+            return false;
+        }
+        let sample_index = self.samples_indices[self.k];
+        let sample = &self.samples[sample_index as usize];
+
+        let sample_data = &mut sample.data.clone();
+        let sample_label = sample.label;
+        let train_stats = self.train_sample(net, sample_data, sample_label);
+
+        *stats = TrainStats {
+            epoch: self.epoch_count,
+            epoch_count: self.epoch_count,
+            batch: self.k / self.samples_indices.len(),
+            batch_count: self.batch_size,
+            samples_per_batch: self.samples_indices.len() / self.batch_size,
+            l1_decay_loss: stats.l1_decay_loss,
+            l2_decay_loss: stats.l2_decay_loss,
+            cost_loss: stats.cost_loss,
+        };
+
+        let lossx = train_stats.cost_loss;
+        let lossw = train_stats.l2_decay_loss;
+
+        // keep track of stats such as the average training error and loss
+        let yhat = net.get_prediction();
+        let train_acc = if yhat == sample_label { 1.0 } else { 0.0 };
+
+        self.classification_loss.add(lossx);
+        self.l2_weight_decay_loss.add(lossw);
+        self.training_accuracy.add(train_acc);
+
+        // self.training_accuracy.add(train_acc);
+        // println!();
+
+        let test_sample_index = self
+            .validation_indices
+            .choose(&mut rand::thread_rng())
+            .copied()
+            .expect("should have validation samples indices");
+        let test_sample = &self.samples[test_sample_index as usize];
+        // evaluate a test example
+        // nets[i].forward(test_sample.x);
+        net.forward(&test_sample.data, true);
+        let yhat_test = net.get_prediction();
+        let test_train_acc = if yhat_test == test_sample.label {
+            1.0
+        } else {
+            0.0
+        };
+        self.validation_accuracy.add(test_train_acc);
+
+        // println!("Training Acc:   {}", self.training_accuracy.average());
+        // println!("Validation Acc: {}", self.validation_accuracy.average());
+
+        true
+    }
 }
 
-pub struct TrainerBuilder<'net> {
-    net: &'net mut Net,
-
+pub struct TrainerBuilder {
     learning_rate: Float,
     l1_decay: Float,
     l2_decay: Float,
     batch_size: usize,
     method: Method,
     momentum: Float,
+
+    samples: Vec<Sample>,
+    epoch_count: usize,
 }
 
-impl<'net> TrainerBuilder<'net> {
-    fn new(net: &'net mut Net) -> Self {
+impl TrainerBuilder {
+    fn new() -> Self {
         Self {
-            net,
-
             learning_rate: 0.01,
             l1_decay: 0.0,
             l2_decay: 0.0,
             batch_size: 1,
             method: Method::Sgd,
             momentum: 0.9,
+            epoch_count: 1,
+            samples: Vec::default(),
         }
     }
 
@@ -227,9 +327,24 @@ impl<'net> TrainerBuilder<'net> {
         self
     }
 
-    pub fn build(self) -> Trainer<'net> {
-        Trainer::<'net> {
-            net: self.net,
+    pub fn epoch(mut self, value: usize) -> Self {
+        self.epoch_count = value;
+        self
+    }
+
+    pub fn samples(mut self, samples: Vec<Sample>) -> Self {
+        self.samples = samples;
+        self
+    }
+
+    pub fn build(self) -> Trainer {
+        let mut indices: Vec<u32> = (0..self.samples.len() as u32).collect();
+        indices.shuffle(&mut rand::thread_rng());
+
+        let n = indices.len();
+        let middle = (n as f32 * 0.1).floor() as usize;
+
+        Trainer {
             learning_rate: self.learning_rate,
             l1_decay: self.l1_decay,
             l2_decay: self.l2_decay,
@@ -241,137 +356,17 @@ impl<'net> TrainerBuilder<'net> {
             // TODO: check this
             regression: false,
             k: 0,
-        }
-    }
-}
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct EpochTrainStats {
-    pub epoch: usize,
-    pub epoch_count: usize,
-    pub batch: usize,
-    pub batch_count: usize,
-    pub samples_per_batch: usize,
-    pub train_stats: TrainStats,
-}
-
-pub struct EpochTrainer<'net> {
-    trainer: Trainer<'net>,
-
-    epoch_count: usize,
-    epoch_counter: usize,
-
-    samples: Vec<Sample>,
-
-    samples_indices: Vec<u32>,
-    validation_indices: Vec<u32>,
-
-    pub classification_loss: Window,
-    pub l2_weight_decay_loss: Window,
-    pub training_accuracy: Window,
-    pub validation_accuracy: Window,
-}
-
-impl<'net> EpochTrainer<'net> {
-    pub fn new(trainer: Trainer<'net>, samples: Vec<Sample>, epoch_count: usize) -> Self {
-        let mut indices: Vec<u32> = (0..samples.len() as u32).collect();
-        indices.shuffle(&mut rand::thread_rng());
-
-        let n = indices.len();
-        let middle = (n as f32 * 0.1).floor() as usize;
-
-        let mut this = Self {
-            epoch_count,
+            epoch_count: self.epoch_count,
             epoch_counter: 0,
+            samples: self.samples,
             samples_indices: indices.split_off(middle),
             validation_indices: indices,
-            trainer,
-            samples,
             classification_loss: Window::default(),
             l2_weight_decay_loss: Window::default(),
             training_accuracy: Window::default(),
             validation_accuracy: Window::default(),
-        };
-
-        assert!(this.samples_indices.len() > this.validation_indices.len());
-        this.randomize_samples();
-        this
-    }
-
-    fn randomize_samples(&mut self) {
-        self.samples_indices.shuffle(&mut rand::thread_rng());
-    }
-
-    pub fn train(&mut self, stats: &mut EpochTrainStats) -> bool {
-        if self.trainer.k >= self.samples_indices.len() {
-            self.trainer.k = 0;
-            self.epoch_counter += 1;
         }
-        if self.epoch_counter >= self.epoch_count {
-            *stats = EpochTrainStats {
-                epoch: self.epoch_count,
-                epoch_count: self.epoch_count,
-                batch: self.trainer.batch_size,
-                batch_count: self.trainer.batch_size,
-                samples_per_batch: self.samples_indices.len() / self.trainer.batch_size,
-                train_stats: stats.train_stats,
-            };
-            self.epoch_counter = 0;
-            self.trainer.k = 0;
-            self.randomize_samples();
-            return false;
-        }
-        let sample_index = self.samples_indices[self.trainer.k];
-        let sample = &self.samples[sample_index as usize];
-
-        let train_stats = self
-            .trainer
-            .train_sample(&mut sample.data.clone(), sample.label);
-
-        *stats = EpochTrainStats {
-            epoch: self.epoch_count,
-            epoch_count: self.epoch_count,
-            batch: self.trainer.k / self.samples_indices.len(),
-            batch_count: self.trainer.batch_size,
-            samples_per_batch: self.samples_indices.len() / self.trainer.batch_size,
-            train_stats,
-        };
-
-        let lossx = train_stats.cost_loss;
-        let lossw = train_stats.l2_decay_loss;
-
-        // keep track of stats such as the average training error and loss
-        let yhat = self.trainer.net().get_prediction();
-        let train_acc = if yhat == sample.label { 1.0 } else { 0.0 };
-
-        self.classification_loss.add(lossx);
-        self.l2_weight_decay_loss.add(lossw);
-        self.training_accuracy.add(train_acc);
-
-        // self.training_accuracy.add(train_acc);
-        // println!();
-
-        let test_sample_index = self
-            .validation_indices
-            .choose(&mut rand::thread_rng())
-            .copied()
-            .expect("should have validation samples indices");
-        let test_sample = &self.samples[test_sample_index as usize];
-        // evaluate a test example
-        // nets[i].forward(test_sample.x);
-        self.trainer.net().forward(&test_sample.data, true);
-        let yhat_test = self.trainer.net().get_prediction();
-        let test_train_acc = if yhat_test == test_sample.label {
-            1.0
-        } else {
-            0.0
-        };
-        self.validation_accuracy.add(test_train_acc);
-
-        // println!("Training Acc:   {}", self.training_accuracy.average());
-        // println!("Validation Acc: {}", self.validation_accuracy.average());
-
-        true
     }
 }
 

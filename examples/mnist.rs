@@ -3,17 +3,12 @@ use std::{error::Error, fs::File, io::Read};
 use convnet_rust::{
     net::{Activation, EndLayer, Layer, Net},
     vol::Vol,
-    EpochTrainStats, EpochTrainer, Sample, Trainer,
+    Sample, TrainStats, Trainer,
 };
 
 fn train(cols: usize, rows: usize, images: &[Vec<u8>], labels: &[u8]) -> Net {
     let mut samples = Vec::new();
-    for (i, (image, label)) in images
-        .iter()
-        .zip(labels.iter().copied())
-        // .take(10)
-        .enumerate()
-    {
+    for (image, label) in images.iter().zip(labels.iter().copied()) {
         if label > 9 {
             println!("Skipping label {label}");
             continue;
@@ -74,19 +69,19 @@ fn train(cols: usize, rows: usize, images: &[Vec<u8>], labels: &[u8]) -> Net {
         EndLayer::Softmax { classes: 10 },
     );
 
-    let trainer = Trainer::builder(&mut net)
+    let mut trainer = Trainer::builder()
         .batch_size(20)
         .method(convnet_rust::Method::Adadlta {
             eps: 1e-6,
             ro: 0.95,
         })
         .l2_decay(0.001)
+        .epoch(5)
+        .samples(samples)
         .build();
 
-    let mut trainer = EpochTrainer::new(trainer, samples, 5);
-
-    let mut stats = EpochTrainStats::default();
-    while trainer.train(&mut stats) {
+    let mut stats = TrainStats::default();
+    while trainer.train(&mut net, &mut stats) {
         // println!("{:?}", stats);
     }
 

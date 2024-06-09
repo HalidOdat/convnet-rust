@@ -27,11 +27,11 @@ pub fn zeros(n: usize) -> Vec<Float> {
 }
 
 pub struct MinMax {
-    min_value: Float,
-    min_index: usize,
-    max_value: Float,
-    max_index: usize,
-    diff_value: Float,
+    pub min_value: Float,
+    pub min_index: usize,
+    pub max_value: Float,
+    pub max_index: usize,
+    pub diff_value: Float,
 }
 
 // return max and min of a given non-empty array.

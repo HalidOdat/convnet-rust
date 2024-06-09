@@ -91,7 +91,7 @@ impl FinalLayer for SofmaxLayer {
         // this.out_act = A;
     }
 
-    fn backward(&mut self, y: usize, in_act: &mut Vol, out_act: &Vol) -> Float {
+    fn backward(&mut self, y: usize, in_act: &mut Vol, _out_act: &Vol) -> Float {
         // compute and accumulate gradient wrt weights and bias of this layer
         // var x = this.in_act;
         let x = in_act;
@@ -166,7 +166,7 @@ impl NetLayer for RegressionLayer {
         x.dw.fill(0.0);
 
         // var loss = 0.0;
-        let mut loss = 0.0;
+        // let mut loss = 0.0;
 
         // if(y instanceof Array || y instanceof Float64Array) {
         //     for(var i=0;i<this.out_depth;i++) {
