@@ -73,6 +73,13 @@ pub struct Specification {
     pub final_layer: EndLayer,
 }
 
+#[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct Prediction {
+    pub index: u32,
+    pub confidance: Float,
+}
+
 // Net manages a set of layers
 // For now constraints: Simple linear order of layers, first layer input last layer a cost layer
 #[derive(::serde::Serialize)]
@@ -386,6 +393,30 @@ impl Net {
         maxi // return index of the class with highest class probability
     }
 
+    pub fn get_predictions(&self) -> Vec<Prediction> {
+        // var S = this.layers[this.layers.length-1];
+        // assert(S.layer_type === 'softmax', 'getPrediction function assumes softmax as last layer of the net!');
+
+        let out_acts = self.acts.last().expect("there should be at least two");
+
+        let p = &out_acts.w;
+
+        let mut result: Vec<_> = p
+            .iter()
+            .enumerate()
+            .map(|(index, confidance)| Prediction {
+                index: index as u32,
+                confidance: *confidance,
+            })
+            .collect();
+        result.sort_by(|a, b| {
+            b.confidance
+                .partial_cmp(&a.confidance)
+                .unwrap_or(std::cmp::Ordering::Less)
+        });
+        result
+    }
+
     pub fn get_cost_loss(&mut self, vol: &Vol, y: usize) -> Float {
         self.forward(vol, false);
 
@@ -408,6 +439,14 @@ impl Net {
             result.push(response);
         }
         result
+    }
+
+    pub fn save_as_bytes(&self) -> Result<Vec<u8>, Box<bincode::ErrorKind>> {
+        bincode::serialize(self)
+    }
+
+    pub fn load_from_bytes(bytes: &[u8]) -> Result<Self, Box<bincode::ErrorKind>> {
+        bincode::deserialize(bytes)
     }
 }
 
