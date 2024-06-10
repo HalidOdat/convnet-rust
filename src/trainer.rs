@@ -16,12 +16,13 @@ pub enum Method {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct TrainStats {
-    pub epoch: usize,
-    pub epoch_count: usize,
-    pub batch: usize,
-    pub batch_count: usize,
-    pub samples_per_batch: usize,
+    pub epoch: u32,
+    pub epoch_count: u32,
+    pub batch: u32,
+    pub batch_count: u32,
+    pub samples_per_batch: u32,
 
     pub l1_decay_loss: Float,
     pub l2_decay_loss: Float,
@@ -38,7 +39,7 @@ pub struct Trainer {
     learning_rate: Float,
     l1_decay: Float,
     l2_decay: Float,
-    batch_size: usize,
+    batch_size: u32,
     method: Method,
     momentum: Float,
 
@@ -51,10 +52,10 @@ pub struct Trainer {
     regression: bool,
 
     /// iteration counter
-    k: usize,
+    k: u32,
 
-    epoch_count: usize,
-    epoch_counter: usize,
+    epoch_count: u32,
+    epoch_counter: u32,
 
     samples: Vec<Sample>,
 
@@ -182,7 +183,7 @@ impl Trainer {
             epoch_count: self.epoch_count,
             batch: self.batch_size,
             batch_count: self.batch_size,
-            samples_per_batch: self.samples_indices.len() / self.batch_size,
+            samples_per_batch: self.samples_indices.len() as u32 / self.batch_size,
 
             l1_decay_loss,
             l2_decay_loss,
@@ -195,7 +196,7 @@ impl Trainer {
     }
 
     pub fn train(&mut self, net: &mut Net, stats: &mut TrainStats) -> bool {
-        if self.k >= self.samples_indices.len() {
+        if self.k >= self.samples_indices.len() as u32 {
             self.k = 0;
             self.epoch_counter += 1;
         }
@@ -205,7 +206,7 @@ impl Trainer {
                 epoch_count: self.epoch_count,
                 batch: self.batch_size,
                 batch_count: self.batch_size,
-                samples_per_batch: self.samples_indices.len() / self.batch_size,
+                samples_per_batch: self.samples_indices.len() as u32 / self.batch_size,
                 l1_decay_loss: stats.l1_decay_loss,
                 l2_decay_loss: stats.l2_decay_loss,
                 cost_loss: stats.cost_loss,
@@ -215,19 +216,19 @@ impl Trainer {
             self.randomize_samples();
             return false;
         }
-        let sample_index = self.samples_indices[self.k];
+        let sample_index = self.samples_indices[self.k as usize];
         let sample = &self.samples[sample_index as usize];
 
         let sample_data = &mut sample.data.clone();
         let sample_label = sample.label;
-        let train_stats = self.train_sample(net, sample_data, sample_label);
+        let train_stats = self.train_sample(net, sample_data, sample_label as usize);
 
         *stats = TrainStats {
             epoch: self.epoch_count,
             epoch_count: self.epoch_count,
-            batch: self.k / self.samples_indices.len(),
+            batch: self.k / self.samples_indices.len() as u32,
             batch_count: self.batch_size,
-            samples_per_batch: self.samples_indices.len() / self.batch_size,
+            samples_per_batch: self.samples_indices.len() as u32 / self.batch_size,
             l1_decay_loss: stats.l1_decay_loss,
             l2_decay_loss: stats.l2_decay_loss,
             cost_loss: stats.cost_loss,
@@ -237,7 +238,7 @@ impl Trainer {
         let lossw = train_stats.l2_decay_loss;
 
         // keep track of stats such as the average training error and loss
-        let yhat = net.get_prediction();
+        let yhat = net.get_prediction() as u32;
         let train_acc = if yhat == sample_label { 1.0 } else { 0.0 };
 
         self.classification_loss.add(lossx);
@@ -257,7 +258,7 @@ impl Trainer {
         // nets[i].forward(test_sample.x);
         net.forward(&test_sample.data, true);
         let yhat_test = net.get_prediction();
-        let test_train_acc = if yhat_test == test_sample.label {
+        let test_train_acc = if yhat_test == test_sample.label as usize {
             1.0
         } else {
             0.0
@@ -275,12 +276,12 @@ pub struct TrainerBuilder {
     learning_rate: Float,
     l1_decay: Float,
     l2_decay: Float,
-    batch_size: usize,
+    batch_size: u32,
     method: Method,
     momentum: Float,
 
     samples: Vec<Sample>,
-    epoch_count: usize,
+    epoch_count: u32,
 }
 
 impl TrainerBuilder {
@@ -312,7 +313,7 @@ impl TrainerBuilder {
         self
     }
 
-    pub fn batch_size(mut self, value: usize) -> Self {
+    pub fn batch_size(mut self, value: u32) -> Self {
         self.batch_size = value;
         self
     }
@@ -327,7 +328,7 @@ impl TrainerBuilder {
         self
     }
 
-    pub fn epoch(mut self, value: usize) -> Self {
+    pub fn epoch(mut self, value: u32) -> Self {
         self.epoch_count = value;
         self
     }

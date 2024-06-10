@@ -9,42 +9,65 @@ use crate::{
 
 mod serde;
 
+#[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Object))]
+pub struct Sample {
+    pub data: Vol,
+    pub label: u32,
+}
+
+#[cfg(feature = "uniffi")]
+#[uniffi::export]
+impl Sample {
+    #[uniffi::constructor]
+    pub fn from_grayscale_image(values: &[u8], width: u32, height: u32, label: u32) -> Self {
+        Self {
+            data: Vol::from_grayscale_image(values, width, height),
+            label,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum Activation {
     Relu,
     Tanh,
 }
 
 #[derive(Debug, Clone, Copy, ::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum Layer {
     Input {
-        width: usize,
-        height: usize,
-        depth: usize,
+        width: u32,
+        height: u32,
+        depth: u32,
     },
     Conv {
-        sx: usize,
-        filters: usize,
-        stride: usize,
-        padding: usize,
+        sx: u32,
+        filters: u32,
+        stride: u32,
+        padding: u32,
         activation: Activation,
     },
     Pool {
-        sx: usize,
-        stride: usize,
+        sx: u32,
+        stride: u32,
     },
     Dense {
-        neurons: usize,
+        neurons: u32,
         activation: Activation,
     },
 }
 
 #[derive(Debug, Clone, Copy, ::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum EndLayer {
-    Softmax { classes: usize },
+    Softmax { classes: u32 },
 }
 
 #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Specification {
     pub layers: Vec<Layer>,
     pub final_layer: EndLayer,
@@ -119,9 +142,9 @@ impl Net {
 
                     dim_set = true;
                     dim = Dim {
-                        in_sx: width,
-                        in_sy: height,
-                        in_depth: depth,
+                        in_sx: width as usize,
+                        in_sy: height as usize,
+                        in_depth: depth as usize,
                     };
 
                     // acts.push(Vol::zeros(dim.in_sx, dim.in_sy, dim.in_depth));
@@ -136,18 +159,24 @@ impl Net {
                     if !dim_set {
                         panic!("dim must be specified");
                     };
-                    let layer = ConvLayer::builder(filters, sx, dim.in_depth, dim.in_sx, dim.in_sy)
-                        .padding(padding)
-                        .stride(stride)
-                        // relus like a bit of positive bias to get gradients early
-                        // otherwise it's technically possible that a relu unit will never turn on (by chance)
-                        // and will never get any gradient and never contribute any computation. Dead relu.
-                        .bias(if activation == Activation::Relu {
-                            0.1
-                        } else {
-                            0.0
-                        })
-                        .build();
+                    let layer = ConvLayer::builder(
+                        filters as usize,
+                        sx as usize,
+                        dim.in_depth,
+                        dim.in_sx,
+                        dim.in_sy,
+                    )
+                    .padding(padding as usize)
+                    .stride(stride as usize)
+                    // relus like a bit of positive bias to get gradients early
+                    // otherwise it's technically possible that a relu unit will never turn on (by chance)
+                    // and will never get any gradient and never contribute any computation. Dead relu.
+                    .bias(if activation == Activation::Relu {
+                        0.1
+                    } else {
+                        0.0
+                    })
+                    .build();
 
                     dim = Dim {
                         in_sx: layer.out_sx(),
@@ -181,8 +210,8 @@ impl Net {
                         panic!("dim must be specified");
                     };
                     let layer: Box<dyn NetLayer> = Box::new(
-                        PoolLayer::builder(sx, dim.in_depth, dim.in_sx, dim.in_sy)
-                            .stride(stride)
+                        PoolLayer::builder(sx as usize, dim.in_depth, dim.in_sx, dim.in_sy)
+                            .stride(stride as usize)
                             .build(),
                     );
 
@@ -202,17 +231,21 @@ impl Net {
                     if !dim_set {
                         panic!("dim must be specified");
                     };
-                    let layer =
-                        FullyConnLayer::builder(neurons, dim.in_sx, dim.in_sy, dim.in_depth)
-                            // relus like a bit of positive bias to get gradients early
-                            // otherwise it's technically possible that a relu unit will never turn on (by chance)
-                            // and will never get any gradient and never contribute any computation. Dead relu.
-                            .bias(if activation == Activation::Relu {
-                                0.1
-                            } else {
-                                0.0
-                            })
-                            .build();
+                    let layer = FullyConnLayer::builder(
+                        neurons as usize,
+                        dim.in_sx,
+                        dim.in_sy,
+                        dim.in_depth,
+                    )
+                    // relus like a bit of positive bias to get gradients early
+                    // otherwise it's technically possible that a relu unit will never turn on (by chance)
+                    // and will never get any gradient and never contribute any computation. Dead relu.
+                    .bias(if activation == Activation::Relu {
+                        0.1
+                    } else {
+                        0.0
+                    })
+                    .build();
 
                     dim = Dim {
                         in_sx: layer.out_sx(),
@@ -252,12 +285,13 @@ impl Net {
 
                 // add an fc layer here, there is no reason the user should
                 // have to worry about this and we almost always want to
-                let layer = FullyConnLayer::builder(classes, dim.in_sx, dim.in_sy, dim.in_depth)
-                    // relus like a bit of positive bias to get gradients early
-                    // otherwise it's technically possible that a relu unit will never turn on (by chance)
-                    // and will never get any gradient and never contribute any computation. Dead relu.
-                    .bias(0.1)
-                    .build();
+                let layer =
+                    FullyConnLayer::builder(classes as usize, dim.in_sx, dim.in_sy, dim.in_depth)
+                        // relus like a bit of positive bias to get gradients early
+                        // otherwise it's technically possible that a relu unit will never turn on (by chance)
+                        // and will never get any gradient and never contribute any computation. Dead relu.
+                        .bias(0.1)
+                        .build();
 
                 dim = Dim {
                     in_sx: layer.out_sx(),

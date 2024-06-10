@@ -140,16 +140,16 @@ impl Vol {
     // setConst
 
     // pub fn augment() {}
-    pub fn from_rgba_image(img: &[u8], width: usize, height: usize) -> Self {
+    pub fn from_rgba_image(img: &[u8], width: u32, height: u32) -> Self {
         let bytes = img;
 
         assert_eq!(
-            4 * width * height,
+            (4 * width * height) as usize,
             bytes.len(),
             "image should have 4 components rgba"
         );
 
-        let mut vol = Self::new(width, height, 4);
+        let mut vol = Self::new(width as usize, height as usize, 4);
         for (w, pixel) in vol.w.iter_mut().zip(bytes.iter().copied()) {
             // normalize image pixels to [-0.5, 0.5]
             *w = (pixel as Float) / 255.0 - 0.5;
@@ -158,16 +158,16 @@ impl Vol {
         vol
     }
 
-    pub fn from_grayscale_image(img: &[u8], width: usize, height: usize) -> Self {
+    pub fn from_grayscale_image(img: &[u8], width: u32, height: u32) -> Self {
         let bytes = img;
 
         assert_eq!(
-            width * height,
+            (width * height) as usize,
             bytes.len(),
             "image should have 1 component luma"
         );
 
-        let mut vol = Self::new(width, height, 1);
+        let mut vol = Self::new(width as usize, height as usize, 1);
         for (w, pixel) in vol.w.iter_mut().zip(bytes.iter().copied()) {
             // normalize image pixels to [-0.5, 0.5]
             *w = (pixel as Float) / 255.0 - 0.5;

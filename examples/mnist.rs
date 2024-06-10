@@ -1,12 +1,8 @@
 use std::{error::Error, fs::File, io::Read};
 
-use convnet_rust::{
-    net::{Activation, EndLayer, Layer, Net},
-    vol::Vol,
-    Sample, TrainStats, Trainer,
-};
+use convnet_rust::{Activation, EndLayer, Layer, Net, Sample, TrainStats, Trainer, Vol};
 
-fn train(cols: usize, rows: usize, images: &[Vec<u8>], labels: &[u8]) -> Net {
+fn train(cols: u32, rows: u32, images: &[Vec<u8>], labels: &[u8]) -> Net {
     let mut samples = Vec::new();
     for (image, label) in images.iter().zip(labels.iter().copied()) {
         if label > 9 {
@@ -16,7 +12,7 @@ fn train(cols: usize, rows: usize, images: &[Vec<u8>], labels: &[u8]) -> Net {
 
         samples.push(Sample {
             data: Vol::from_grayscale_image(image, cols, rows),
-            label: label as usize,
+            label: label as u32,
         });
 
         // image::save_buffer(
@@ -97,8 +93,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Extract the values
     let magic = u32::from_be_bytes([buffer[0], buffer[1], buffer[2], buffer[3]]);
     let size = u32::from_be_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]) as usize;
-    let rows = u32::from_be_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]) as usize;
-    let cols = u32::from_be_bytes([buffer[12], buffer[13], buffer[14], buffer[15]]) as usize;
+    let rows = u32::from_be_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]);
+    let cols = u32::from_be_bytes([buffer[12], buffer[13], buffer[14], buffer[15]]);
 
     println!(
         "Magic: {}, Size: {}, Rows: {}, Cols: {}",
@@ -109,7 +105,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut images = Vec::new();
     for _ in 0..size {
-        let mut image = vec![0u8; rows * cols];
+        let n = rows * cols;
+        let mut image = vec![0u8; n as usize];
         file.read_exact(&mut image)?;
 
         images.push(image);

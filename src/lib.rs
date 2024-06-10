@@ -1,17 +1,16 @@
-mod batch;
-pub mod layers;
-pub mod net;
+mod layers;
+mod net;
 mod trainer;
-pub mod utils;
-pub mod vol;
+mod utils;
+mod vol;
 
-pub use batch::*;
+pub use layers::*;
+pub use net::*;
 pub use trainer::*;
+pub use utils::*;
+pub use vol::*;
 
 pub type Float = f32;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {}
-}
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
