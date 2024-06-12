@@ -22,6 +22,9 @@ impl ReluLayer {
 
 #[typetag::serde]
 impl NetLayer for ReluLayer {
+    fn name(&self) -> &str {
+        "Relu"
+    }
     fn forward(
         &mut self,
         in_act: &crate::vol::Vol,
@@ -104,6 +107,9 @@ impl SigmoidLayer {
 
 #[typetag::serde]
 impl NetLayer for SigmoidLayer {
+    fn name(&self) -> &str {
+        "Sigmoid"
+    }
     fn forward(
         &mut self,
         in_act: &crate::vol::Vol,
@@ -176,6 +182,9 @@ impl TanhLayer {
 
 #[typetag::serde]
 impl NetLayer for TanhLayer {
+    fn name(&self) -> &str {
+        "TanH"
+    }
     fn forward(
         &mut self,
         in_act: &crate::vol::Vol,

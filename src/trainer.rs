@@ -57,7 +57,7 @@ pub struct Trainer {
     epoch_count: u32,
     epoch_counter: u32,
 
-    samples: Vec<Sample>,
+    pub samples: Vec<Sample>,
 
     samples_indices: Vec<u32>,
     validation_indices: Vec<u32>,
@@ -270,6 +270,60 @@ impl Trainer {
 
         true
     }
+
+    pub fn train_without_validation(&mut self, net: &mut Net, stats: &mut TrainStats) -> bool {
+        if self.k >= self.samples_indices.len() as u32 {
+            self.k = 0;
+            self.epoch_counter += 1;
+        }
+        if self.epoch_counter >= self.epoch_count {
+            *stats = TrainStats {
+                epoch: self.epoch_count,
+                epoch_count: self.epoch_count,
+                batch: self.batch_size,
+                batch_count: self.batch_size,
+                samples_per_batch: self.samples_indices.len() as u32 / self.batch_size,
+                l1_decay_loss: stats.l1_decay_loss,
+                l2_decay_loss: stats.l2_decay_loss,
+                cost_loss: stats.cost_loss,
+            };
+            self.epoch_counter = 0;
+            self.k = 0;
+            self.randomize_samples();
+            return false;
+        }
+        let Some(sample) = self.samples.choose(&mut rand::thread_rng()) else {
+            return false;
+        };
+
+        let sample_data = &mut sample.data.clone();
+        let sample_label = sample.label;
+        let train_stats = self.train_sample(net, sample_data, sample_label as usize);
+
+        *stats = TrainStats {
+            epoch: self.epoch_count,
+            epoch_count: self.epoch_count,
+            batch: self.k / self.samples_indices.len() as u32,
+            batch_count: self.batch_size,
+            samples_per_batch: self.samples_indices.len() as u32 / self.batch_size,
+            l1_decay_loss: stats.l1_decay_loss,
+            l2_decay_loss: stats.l2_decay_loss,
+            cost_loss: stats.cost_loss,
+        };
+
+        let lossx = train_stats.cost_loss;
+        let lossw = train_stats.l2_decay_loss;
+
+        // keep track of stats such as the average training error and loss
+        let yhat = net.get_prediction() as u32;
+        let train_acc = if yhat == sample_label { 1.0 } else { 0.0 };
+
+        self.classification_loss.add(lossx);
+        self.l2_weight_decay_loss.add(lossw);
+        self.training_accuracy.add(train_acc);
+
+        true
+    }
 }
 
 pub struct TrainerBuilder {
@@ -363,6 +417,31 @@ impl TrainerBuilder {
             samples: self.samples,
             samples_indices: indices.split_off(middle),
             validation_indices: indices,
+            classification_loss: Window::default(),
+            l2_weight_decay_loss: Window::default(),
+            training_accuracy: Window::default(),
+            validation_accuracy: Window::default(),
+        }
+    }
+    pub fn build_without_validation(self) -> Trainer {
+        Trainer {
+            learning_rate: self.learning_rate,
+            l1_decay: self.l1_decay,
+            l2_decay: self.l2_decay,
+            batch_size: self.batch_size,
+            method: self.method,
+            momentum: self.momentum,
+            gsum: vec![],
+            xsum: vec![],
+            // TODO: check this
+            regression: false,
+            k: 0,
+
+            epoch_count: self.epoch_count,
+            epoch_counter: 0,
+            samples: self.samples,
+            samples_indices: Vec::new(),
+            validation_indices: Vec::new(),
             classification_loss: Window::default(),
             l2_weight_decay_loss: Window::default(),
             training_accuracy: Window::default(),

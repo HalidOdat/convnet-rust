@@ -30,6 +30,9 @@ impl InputLayer {
 
 #[typetag::serde]
 impl NetLayer for InputLayer {
+    fn name(&self) -> &str {
+        "Input"
+    }
     fn forward(
         &mut self,
         in_act: &crate::vol::Vol,

@@ -448,6 +448,14 @@ impl Net {
     pub fn load_from_bytes(bytes: &[u8]) -> Result<Self, Box<bincode::ErrorKind>> {
         bincode::deserialize(bytes)
     }
+
+    pub fn weights(&self) -> &[Vol] {
+        &self.acts
+    }
+
+    pub fn layers(&self) -> (&[Box<dyn NetLayer + Send>], &(dyn FinalLayer + Send)) {
+        (&self.layers, self.final_layer.as_ref())
+    }
 }
 
 #[cfg(test)]

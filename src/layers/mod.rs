@@ -14,9 +14,14 @@ use crate::{vol::Vol, Float};
 
 #[typetag::serde(tag = "type")]
 pub trait NetLayer: Send {
+    fn name(&self) -> &str;
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, is_training: bool);
     fn backward(&mut self, in_act: &mut Vol, out_act: &Vol);
     fn params_and_grads(&mut self) -> Vec<LayerDetails<'_>>;
+
+    fn weights(&self) -> Vec<&Vol> {
+        Vec::new()
+    }
 
     fn out_sx(&self) -> usize;
     fn out_sy(&self) -> usize;
@@ -25,9 +30,14 @@ pub trait NetLayer: Send {
 
 #[typetag::serde(tag = "type")]
 pub trait FinalLayer: Send {
+    fn name(&self) -> &str;
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, is_training: bool);
     fn backward(&mut self, y: usize, in_act: &mut Vol, out_act: &Vol) -> Float;
     fn params_and_grads(&mut self) -> Vec<LayerDetails<'_>>;
+
+    fn weights(&self) -> Vec<&Vol> {
+        Vec::new()
+    }
 
     fn out_sx(&self) -> usize;
     fn out_sy(&self) -> usize;

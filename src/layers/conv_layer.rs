@@ -151,6 +151,9 @@ impl ConvLayerBuilder {
 
 #[typetag::serde]
 impl NetLayer for ConvLayer {
+    fn name(&self) -> &str {
+        "Conv"
+    }
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         let v_sx = in_act.sx() as isize;
         let v_sy = in_act.sy() as isize;
@@ -318,6 +321,15 @@ impl NetLayer for ConvLayer {
         });
         result
     }
+
+    fn weights(&self) -> Vec<&Vol> {
+        let mut result = Vec::with_capacity(self.filters.len() + 1);
+        for filter in &self.filters {
+            result.push(filter);
+        }
+
+        result
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -352,6 +364,9 @@ impl FullyConnLayer {
 
 #[typetag::serde]
 impl NetLayer for FullyConnLayer {
+    fn name(&self) -> &str {
+        "Dense"
+    }
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         // this.in_act = V;
         // var A = new Vol(1, 1, this.out_depth, 0.0);
@@ -434,6 +449,15 @@ impl NetLayer for FullyConnLayer {
             l1_decay_mul: 0.0,
             l2_decay_mul: 0.0,
         });
+        result
+    }
+
+    fn weights(&self) -> Vec<&Vol> {
+        let mut result = Vec::with_capacity(self.filters.len() + 1);
+        for filter in &self.filters {
+            result.push(filter);
+        }
+
         result
     }
 }

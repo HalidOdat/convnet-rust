@@ -37,6 +37,9 @@ impl SofmaxLayer {
 
 #[typetag::serde]
 impl FinalLayer for SofmaxLayer {
+    fn name(&self) -> &str {
+        "Softmax"
+    }
     fn forward(
         &mut self,
         in_act: &crate::vol::Vol,
@@ -129,6 +132,10 @@ impl FinalLayer for SofmaxLayer {
     fn params_and_grads(&mut self) -> Vec<super::LayerDetails<'_>> {
         Vec::new()
     }
+
+    fn weights(&self) -> Vec<&Vol> {
+        Vec::new()
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -153,6 +160,9 @@ impl RegressionLayer {
 
 #[typetag::serde]
 impl NetLayer for RegressionLayer {
+    fn name(&self) -> &str {
+        "Regression"
+    }
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         *out_act = in_act.clone();
     }
@@ -230,6 +240,9 @@ impl SVMLayer {
 
 #[typetag::serde]
 impl FinalLayer for SVMLayer {
+    fn name(&self) -> &str {
+        "SVM"
+    }
     fn forward(&mut self, in_act: &Vol, out_act: &mut Vol, _is_training: bool) {
         *out_act = in_act.clone();
     }

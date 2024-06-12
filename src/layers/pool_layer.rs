@@ -109,6 +109,9 @@ impl PoolLayerBuilder {
 
 #[typetag::serde]
 impl NetLayer for PoolLayer {
+    fn name(&self) -> &str {
+        "Pool"
+    }
     fn forward(
         &mut self,
         in_act: &crate::vol::Vol,
