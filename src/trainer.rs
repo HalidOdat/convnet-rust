@@ -425,31 +425,6 @@ impl TrainerBuilder {
             validation_accuracy: Window::default(),
         }
     }
-    pub fn build_without_validation(self) -> Trainer {
-        Trainer {
-            learning_rate: self.learning_rate,
-            l1_decay: self.l1_decay,
-            l2_decay: self.l2_decay,
-            batch_size: self.batch_size,
-            method: self.method,
-            momentum: self.momentum,
-            gsum: vec![],
-            xsum: vec![],
-            // TODO: check this
-            regression: false,
-            k: 0,
-
-            epoch_count: self.epoch_count,
-            epoch_counter: 0,
-            samples: self.samples,
-            samples_indices: Vec::new(),
-            validation_indices: Vec::new(),
-            classification_loss: Window::default(),
-            l2_weight_decay_loss: Window::default(),
-            training_accuracy: Window::default(),
-            validation_accuracy: Window::default(),
-        }
-    }
 }
 
 pub struct Window {
