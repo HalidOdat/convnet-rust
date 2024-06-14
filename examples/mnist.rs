@@ -2,29 +2,8 @@ use std::{error::Error, fs::File, io::Read};
 
 use convnet_rust::{Activation, EndLayer, Layer, Net, Sample, TrainStats, Trainer, Vol};
 
-fn train(cols: u32, rows: u32, images: &[Vec<u8>], labels: &[u8]) -> Net {
-    let mut samples = Vec::new();
-    for (image, label) in images.iter().zip(labels.iter().copied()) {
-        if label > 9 {
-            println!("Skipping label {label}");
-            continue;
-        }
-
-        samples.push(Sample {
-            data: Vol::from_grayscale_image(image, cols, rows),
-            label: label as u32,
-        });
-
-        // image::save_buffer(
-        //     format!("test_{label}___{i}.png"),
-        //     &image,
-        //     cols as u32,
-        //     rows as u32,
-        //     ColorType::L8,
-        // )?;
-    }
-
-    /*
+fn network(cols: u32, rows: u32) -> Net {
+        /*
         layer_defs = [];
     layer_defs.push({type:'input', out_sx:24, out_sy:24, out_depth:1});
     layer_defs.push({type:'conv', sx:5, filters:8, stride:1, pad:2, activation:'relu'});
@@ -38,7 +17,7 @@ fn train(cols: u32, rows: u32, images: &[Vec<u8>], labels: &[u8]) -> Net {
 
     trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:20, l2_decay:0.001});
          */
-    let mut net = Net::new(
+    let net = Net::new(
         &[
             Layer::Input {
                 width: cols,
@@ -65,6 +44,32 @@ fn train(cols: u32, rows: u32, images: &[Vec<u8>], labels: &[u8]) -> Net {
         EndLayer::Softmax { classes: 10 },
     );
 
+    net
+}
+
+fn train(net: &mut Net, cols: u32, rows: u32, images: &[Vec<u8>], labels: &[u8]) {
+    let mut samples = Vec::new();
+    for (image, label) in images.iter().zip(labels.iter().copied()) {
+        if label > 9 {
+            println!("Skipping label {label}");
+            continue;
+        }
+
+        samples.push(Sample {
+            data: Vol::from_grayscale_image(image, cols, rows),
+            label: label as u32,
+        });
+
+        // image::save_buffer(
+        //     format!("test_{label}___{i}.png"),
+        //     &image,
+        //     cols as u32,
+        //     rows as u32,
+        //     ColorType::L8,
+        // )?;
+    }
+
+
     let mut trainer = Trainer::builder()
         .batch_size(20)
         .method(convnet_rust::Method::Adadlta {
@@ -74,14 +79,13 @@ fn train(cols: u32, rows: u32, images: &[Vec<u8>], labels: &[u8]) -> Net {
         .l2_decay(0.001)
         .epoch(5)
         .samples(samples)
+        .validation(0.0)
         .build();
 
     let mut stats = TrainStats::default();
-    while trainer.train(&mut net, &mut stats) {
+    while trainer.train(net, &mut stats) {
         // println!("{:?}", stats);
     }
-
-    net
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -132,10 +136,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut labels = Vec::new();
     let read_count = file.read_to_end(&mut labels)?;
 
-    assert_eq!(read_count, 10000);
-
-    let mut net = train(cols, rows, &images, &labels);
-    // let mut net: Net = bincode::deserialize_from(File::open("mnist-net-thin.bin")?)?;
+    // let mut net = train(cols, rows, &images, &labels);
+    let mut net: Net = bincode::deserialize_from(File::open("mnist-net-big.bin")?)?;
+    train(&mut net, cols, rows, &images, &labels);
 
     let mut x = 0;
 
@@ -168,7 +171,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("False count: {x}");
     let bytes = bincode::serialize(&net)?;
-    std::fs::write("mnist-net-thin.bin", bytes)?;
+    std::fs::write("mnist-net-big2.bin", bytes)?;
 
     Ok(())
 }

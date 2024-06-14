@@ -1,3 +1,4 @@
+use crate::Float;
 use super::Vol;
 
 impl<'de> serde::Deserialize<'de> for Vol {
@@ -67,15 +68,15 @@ impl<'de> serde::Deserialize<'de> for Vol {
                 let depth = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;
-                let w = seq
+                let w: Vec<Float> = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(3, &self))?;
                 Ok(Vol {
                     sx,
                     sy,
                     depth,
+                    dw: vec![0.0; w.len()],
                     w,
-                    dw: vec![0.0; sx + sy + depth],
                 })
             }
 
@@ -118,13 +119,13 @@ impl<'de> serde::Deserialize<'de> for Vol {
                 let sx = sx.ok_or_else(|| serde::de::Error::missing_field("sx"))?;
                 let sy = sy.ok_or_else(|| serde::de::Error::missing_field("sy"))?;
                 let depth = depth.ok_or_else(|| serde::de::Error::missing_field("depth"))?;
-                let w = w.ok_or_else(|| serde::de::Error::missing_field("w"))?;
+                let w: Vec<Float> = w.ok_or_else(|| serde::de::Error::missing_field("w"))?;
                 Ok(Vol {
                     sx,
                     sy,
                     depth,
+                    dw: vec![0.0; w.len()],
                     w,
-                    dw: vec![0.0; sx * sy * depth],
                 })
             }
         }

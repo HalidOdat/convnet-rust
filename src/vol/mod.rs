@@ -17,7 +17,7 @@ pub struct Vol {
 
     pub w: Vec<Float>,
 
-    #[serde(skip)]
+    #[serde(skip_serializing)]
     pub dw: Vec<Float>,
 }
 

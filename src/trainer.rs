@@ -245,28 +245,22 @@ impl Trainer {
         self.l2_weight_decay_loss.add(lossw);
         self.training_accuracy.add(train_acc);
 
-        // self.training_accuracy.add(train_acc);
-        // println!();
-
-        let test_sample_index = self
+        if let Some(test_sample_index) = self
             .validation_indices
             .choose(&mut rand::thread_rng())
             .copied()
-            .expect("should have validation samples indices");
-        let test_sample = &self.samples[test_sample_index as usize];
-        // evaluate a test example
-        // nets[i].forward(test_sample.x);
-        net.forward(&test_sample.data, true);
-        let yhat_test = net.get_prediction();
-        let test_train_acc = if yhat_test == test_sample.label as usize {
-            1.0
-        } else {
-            0.0
-        };
-        self.validation_accuracy.add(test_train_acc);
+        {
+            let test_sample = &self.samples[test_sample_index as usize];
 
-        // println!("Training Acc:   {}", self.training_accuracy.average());
-        // println!("Validation Acc: {}", self.validation_accuracy.average());
+            net.forward(&test_sample.data, true);
+            let yhat_test = net.get_prediction();
+            let test_train_acc = if yhat_test == test_sample.label as usize {
+                1.0
+            } else {
+                0.0
+            };
+            self.validation_accuracy.add(test_train_acc);
+        }
 
         true
     }
@@ -336,6 +330,8 @@ pub struct TrainerBuilder {
 
     samples: Vec<Sample>,
     epoch_count: u32,
+
+    validation: f32,
 }
 
 impl TrainerBuilder {
@@ -349,6 +345,7 @@ impl TrainerBuilder {
             momentum: 0.9,
             epoch_count: 1,
             samples: Vec::default(),
+            validation: 0.2,
         }
     }
 
@@ -387,6 +384,11 @@ impl TrainerBuilder {
         self
     }
 
+    pub fn validation(mut self, value: f32) -> Self {
+        self.validation = value;
+        self
+    }
+
     pub fn samples(mut self, samples: Vec<Sample>) -> Self {
         self.samples = samples;
         self
@@ -397,7 +399,7 @@ impl TrainerBuilder {
         indices.shuffle(&mut rand::thread_rng());
 
         let n = indices.len();
-        let middle = (n as f32 * 0.1).floor() as usize;
+        let middle = (n as f32 * self.validation).floor() as usize;
 
         Trainer {
             learning_rate: self.learning_rate,

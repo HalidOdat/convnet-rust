@@ -259,7 +259,6 @@ impl NetLayer for ConvLayer {
                             if oy >= 0 && oy < v_sy && ox >= 0 && ox < v_sx {
                                 // for(var fd=0;fd<f.depth;fd++) {
                                 for fd in 0..f.depth() as isize {
-                                    // // avoid function call overhead (x2) for efficiency, compromise modularity :(
                                     // var ix1 = ((V_sx * oy)+ox)*V.depth+fd;
                                     let ix1 = ((v_sx * oy) + ox) * v.depth() as isize + fd;
                                     // var ix2 = ((f.sx * fy)+fx)*f.depth+fd;
@@ -268,27 +267,19 @@ impl NetLayer for ConvLayer {
 
                                     f.dw[ix2 as usize] += v.w[ix1 as usize] * chain_grad;
                                     v.dw[ix1 as usize] += f.w[ix2 as usize] * chain_grad;
-                                    // }
                                 }
-                                // }
                             }
-
-                            // }
                         }
-                        // }
                     }
 
                     // this.biases.dw[d] += chain_grad;
                     self.biases.dw[d] += chain_grad;
 
-                    // }
                     x += xy_stride;
                 }
 
-                // }
                 y += xy_stride;
             }
-            // }
         }
     }
 
